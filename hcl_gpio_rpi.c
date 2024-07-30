@@ -3,7 +3,7 @@
 //  hcl_gpio_rpi.c - Seiko Epson Hardware Control Library
 //
 //  This layer of indirection is added to allow the sample code to call
-//  generic  functions to work on multiple hardware platforms, this is the
+//  generic  functions to work on multiple hardware platforms. This is the
 //  Raspberry Pi specific implementation for GPIO
 //
 //
@@ -26,6 +26,7 @@
 /*****************************************************************************
 ** Function name:       gpioInit
 ** Description:         Initialize the RPI GPIO Interface.
+**                      Delay for RESET incase it was asserted
 ** Parameters:          None
 ** Return value:        OK or NG
 ** Note:                This function assumes seInit() has been called first to
@@ -35,8 +36,13 @@ int gpioInit(void) {
   pinMode(EPSON_RESET, OUTPUT);
   pinMode(EPSON_CS, OUTPUT);
   pinMode(EPSON_DRDY, INPUT);
-  pullUpDnControl(EPSON_DRDY, PUD_OFF);
+  pullUpDnControl(EPSON_DRDY, PUD_DOWN);
 
+  // Force outputs to inactive state
+  gpioSet(EPSON_RESET);  // RESET pin HIGH
+  gpioSet(EPSON_CS);     // CS pin HIGH
+  printf("...delay for GPIO pins...");
+  seDelayMS(3000);  // incase of RESET
   return OK;
 }
 

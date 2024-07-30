@@ -18,10 +18,9 @@
 #include <string.h>
 #include <time.h>
 
-#ifdef SPI
-#else
+#ifndef SPI
 #include <termios.h>
-#endif  // SPI
+#endif  // !SPI
 
 #include "hcl.h"
 #include "hcl_gpio.h"
@@ -34,23 +33,22 @@
 
 #include "sensor_epsonCommon.h"
 
-#ifdef SPI
-#else
-
+#ifndef SPI
 // Modify below as needed for hardware
 const char* IMUSERIAL = "/dev/ttyUSB0";
-#endif  // SPI
+#endif  // !SPI
 
 int main(int argc, char* argv[]) {
   char prod_id[9];  // Device Product ID
   char ser_id[9];   // Device Serial ID
+  struct EpsonProperties epson_sensor = epson_sensors[G_UNKNOWN];
 
   // 1) Initialize the Seiko Epson HCL layer
   printf("\r\nInitializing HCL layer...");
   if (!seInit()) {
     printf(
-        "\r\nError: could not initialize the Seiko Epson HCL layer. "
-        "Exiting...\r\n");
+      "\r\nError: could not initialize the Seiko Epson HCL layer. "
+      "Exiting...\r\n");
     return -1;
   }
   printf("...done.\r\n");
@@ -68,8 +66,8 @@ int main(int argc, char* argv[]) {
 #ifdef SPI
   // 3) Initialize SPI Interface
   printf("\r\nInitializing SPI interface...");
-  // The max SPI clock rate is 1MHz for current model Epson IMUs
-  if (!spiInit(SPI_MODE3, 500000)) {
+  // The max SPI clock rate is 1MHz for burst reads in Epson IMUs
+  if (!spiInit(SPI_MODE3, 1000000)) {
     printf("\r\nError: could not initialize SPI interface. Exiting...\r\n");
     gpioRelease();
     seRelease();
@@ -91,22 +89,42 @@ int main(int argc, char* argv[]) {
 
   printf("...done.\r\n");
 
-  // 4) Print out which model executable was compiled and identify model
-  printf("\r\nCompiled for:\t" BUILD_FOR);
-  printf("\r\nReading device info...");
-  if (strcmp(BUILD_FOR, getProductId(prod_id)) != 0) {
-    printf("\r\n*** Build *mismatch* with detected device ***");
-    printf(
-        "\r\n*** Ensure you specify a compatible 'MODEL=' variable when "
-        "running make when  rebuilding the driver ***\r\n");
-  }
-  printf("\r\nPRODUCT ID:\t%s", getProductId(prod_id));
-  printf("\r\nSERIAL ID:\t%s", getSerialId(ser_id));
+  // 4) Power on sequence - force sensor to config mode, read ID and
+  //    check for errors
 
-  // Incase, the IMU is currently in sampling mode, force config mode before
-  // attempting to read from registers
-  sensorStop();
-  registerDump();
+  printf("\r\nSensor starting up...");
+  if (!sensorPowerOn()) {
+    printf("\r\nError: failed to power on sensor. Exiting...\r\n");
+
+#ifdef SPI
+    spiRelease();
+#else
+    uartRelease();
+#endif
+
+    gpioRelease();
+    seRelease();
+    return -1;
+  }
+  printf("...done.\r\n");
+
+  // Auto-Detect Epson Sensor Model Properties
+  printf("\r\nDetecting sensor model...");
+  if (!sensorGetDeviceModel(&epson_sensor, prod_id, ser_id)) {
+    printf("\r\nError: could not detect Epson Sensor. Exiting...\r\n");
+
+#ifdef SPI
+    spiRelease();
+#else
+    uartRelease();
+#endif
+
+    gpioRelease();
+    seRelease();
+    return -1;
+  }
+
+  sensorDumpRegisters(&epson_sensor);
 
 #ifdef SPI
   spiRelease();

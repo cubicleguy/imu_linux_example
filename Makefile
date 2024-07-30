@@ -1,13 +1,13 @@
 CC=g++
 
 # pass BUILD_FOR as string to $(CC)
-DEFINES= -D$(IF) -D$(PLATFORM) -D$(MODEL) -DBUILD_FOR=\"$(MODEL)\"
+DEFINES= -D$(IF) -D$(PLATFORM)
 INCLUDES= .
 CFLAGS= -I$(INCLUDES) $(DEFINES) -Wall
 LIBS=
 DEPS= hcl.h hcl_gpio.h sensor_epsonCommon.h main_helper.h
-DEPS_UART= hcl_uart.h
-DEPS_SPI= hcl_spi.h
+DEPS_UART= hcl_uart.h sensor_epsonUart.h
+DEPS_SPI= hcl_spi.h sensor_epsonSpi.h
 
 OBJ= main_helper.o sensor_epsonCommon.o
 
@@ -16,63 +16,6 @@ IF ?= UART
 
 # defaults to NONE
 PLATFORM ?= NONE
-
-# If no MODEL macro is defined when calling make it defaults to G366PDG0
-MODEL ?= G366PDG0
-
-####### Adding MODEL Specific Files
-ifeq ($(MODEL), G320PDG0)
-	OBJ+= sensor_epsonG320.o
-	DEPS+= sensor_epsonG320.h
-
-else ifeq ($(MODEL), G330PDG0)
-	OBJ+= sensor_epsonG330_G366.o
-	DEPS+= sensor_epsonG330PDG0.h
-
-else ifeq ($(MODEL), G354PDH0)
-	OBJ+= sensor_epsonG354.o
-	DEPS+= sensor_epsonG354.h
-
-else ifeq ($(MODEL), G364PDC0)
-	OBJ+= sensor_epsonG364.o
-	DEPS+= sensor_epsonG364PDC0.h
-
-else ifeq ($(MODEL), G364PDCA)
-	OBJ+= sensor_epsonG364.o
-	DEPS+= sensor_epsonG364PDCA.h
-
-else ifeq ($(MODEL), G365PDC1)
-	OBJ+= sensor_epsonG365.o
-	DEPS+= sensor_epsonG365PDC1.h
-
-else ifeq ($(MODEL), G365PDF1)
-	OBJ+= sensor_epsonG365.o
-	DEPS+= sensor_epsonG365PDF1.h
-
-else ifeq ($(MODEL), G366PDG0)
-	OBJ+= sensor_epsonG330_G366.o
-	DEPS+= sensor_epsonG366PDG0.h
-
-else ifeq ($(MODEL), G370PDF1)
-	OBJ+= sensor_epsonG370.o
-	DEPS+= sensor_epsonG370PDF1.h
-
-else ifeq ($(MODEL), G370PDS0)
-	OBJ+= sensor_epsonG370.o
-	DEPS+= sensor_epsonG370PDS0.h
-
-else ifeq ($(MODEL), G370PDG0)
-	OBJ+= sensor_epsonG370.o
-	DEPS+= sensor_epsonG370PDG0.h
-
-else ifeq ($(MODEL), G370PDT0)
-	OBJ+= sensor_epsonG370.o
-	DEPS+= sensor_epsonG370PDT0.h
-
-else ifeq ($(MODEL), V340PDD0)
-	OBJ+= sensor_epsonV340.o
-	DEPS+= sensor_epsonV340.h
-endif
 
 ####### Adding IF Specific Files
 ifeq ($(IF), UART)
@@ -113,22 +56,18 @@ clean:
 	rm -f csvlogger screen regdump
 
 tar:
-	tar cvzf archive.tar.gz *.c *.h readme.txt Makefile
+	tar cvzf archive.tar.gz *.c *.h README.md Makefile
 
 help:
 	@echo "supported make commands are:"
 	@echo "\tmake clean"
-	@echo "\tmake <targets> MODEL=<model>\n"
+	@echo "\tmake <targets>\n"
 	@echo "valid <targets> are: all csvlogger screen or regdump\n"
-	@echo "valid <models> are:"
-	@echo "\tG354PDH0 G364PDC0 G364PDCA G320PDG0 V340PDD0"
-	@echo "\tG365PDC1 G365PDF1 G370PDF1 G370PDS0"
-	@echo "\tG330PDG0 G366PDG0(default) G370PDG0 G370PDT0\n"
 	@echo "valid <interfaces, IF> are:"
 	@echo "\tUART SPI"
 	@echo "valid <platforms, PLATFORM> are:"
 	@echo "\tNONE RPI"
-	@echo "example:\n\tmake csvlogger MODEL=G364PDC0 (defaults PLATFORM=NONE, IF=UART)"
-	@echo "\tmake screen (defaults to PLATFORM=NONE, IF=UART, MODEL=G366PDG0)"
-	@echo "\tmake regdump IF=SPI PLATFORM=SPI MODEL=G370PDG0"
-	@echo "\tmake all (defaults to PLATFORM=NONE, IF=UART, MODEL=G366PDG0 targets=csvlogger, screen, regdump)"
+	@echo "example:\n\tmake csvlogger (defaults PLATFORM=NONE, IF=UART)"
+	@echo "\tmake screen PLATFORM=RPI (defaults to IF=UART)"
+	@echo "\tmake regdump IF=SPI PLATFORM=RPI"
+	@echo "\tmake all (defaults to PLATFORM=NONE, IF=UART, targets=csvlogger, screen, regdump)"

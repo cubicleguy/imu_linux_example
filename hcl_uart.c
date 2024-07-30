@@ -34,12 +34,10 @@
 extern const char* IMUSERIAL;
 static int fd_serial;
 
-typedef unsigned char Byte;
-
 // Local function prototypes
 int openComPort(const char* comPortPath, speed_t baudRate);
-
 void closeComPort(void);
+int deviceOk(void);
 
 /*****************************************************************************
 ** Function name:       uartInit
@@ -55,6 +53,15 @@ int uartInit(const char* comPortPath, int baudrate) {
   speed_t baudRate;
 
   switch (baudrate) {
+    case BAUD_2000000:
+      baudRate = B2000000;
+      break;
+    case BAUD_1500000:
+      baudRate = B1500000;
+      break;
+    case BAUD_1000000:
+      baudRate = B1000000;
+      break;
     case BAUD_921600:
       baudRate = B921600;
       break;
@@ -68,7 +75,16 @@ int uartInit(const char* comPortPath, int baudrate) {
       printf("Invalid baudrate\n");
       return NG;
   }
-  return openComPort(comPortPath, baudRate);
+
+  if (!openComPort(comPortPath, baudRate)) {
+    return NG;
+  }
+
+  if (!deviceOk()) {
+    printf("Invalid device response\n");
+    return NG;
+  }
+  return OK;
 }
 
 /*****************************************************************************
@@ -80,8 +96,7 @@ int uartInit(const char* comPortPath, int baudrate) {
 ** Return value:        OK
 *****************************************************************************/
 int uartRelease(void) {
-  seDelayMicroSecs(
-      100000);  // Provide 100msec delay for any pending transfer to complete
+  seDelayMS(100);  // Provide 100msec delay for any pending transfer to complete
   closeComPort();
   return OK;
 }
@@ -153,7 +168,7 @@ int openComPort(const char* comPortPath, speed_t baudRate) {
 
   if (fd_serial < 0)  // Opening of port is NG
   {
-    printf("Unable to open com Port %s\n", comPortPath);
+    printf("...Unable to open com Port %s\n", comPortPath);
     return NG;
   }
 
@@ -165,44 +180,29 @@ int openComPort(const char* comPortPath, speed_t baudRate) {
   cfsetospeed(&options, baudRate);
   cfsetispeed(&options, baudRate);
 
-  // Turn off character processing
-  // Clear current char size mask
-  // Force 8 bit input
-  options.c_cflag &= ~CSIZE;  // Mask the character size bits
-  options.c_cflag |= CS8;
-
-  // Set the number of stop bits to 1
-  options.c_cflag &= ~CSTOPB;
-
-  // Set parity to None
-  options.c_cflag &= ~PARENB;
-
-  // Set for no input processing
-  options.c_iflag = 0;
-
   // From https://en.wikibooks.org/wiki/Serial_Programming/termios
   // Input flags - Turn off input processing
   // convert break to null byte, no CR to NL translation,
   // no NL to CR translation, don't mark parity errors or breaks
   // no input parity check, don't strip high bit off,
   // no XON/XOFF software flow control
-  //    options.c_iflag &= ~(IGNPAR | IGNBRK | BRKINT | IGNCR | ICRNL |
-  //        INLCR | PARMRK | INPCK | ISTRIP | IXON | IXOFF | IXANY);
+  options.c_iflag &=
+    ~(IGNBRK | BRKINT | ICRNL | INLCR | PARMRK | INPCK | ISTRIP | IXON);
 
-  // Output flags - Turn off output processing
-
-  // From http://www.cmrr.umn.edu/~strupp/serial.html
-  // options.c_oflag &= ~OPOST;
   options.c_oflag = 0;  // raw output
 
   // No line processing
   // echo off, echo newline off, canonical mode off,
   // extended input processing off, signal chars off
 
-  // From http://www.cmrr.umn.edu/~strupp/serial.html
-  // options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);options.c_lflag &=
-  // ~(ICANON | ECHO | ECHOE | ISIG);
-  options.c_lflag = 0;  // raw input
+  options.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
+
+  // Turn off character processing
+  // clear current char size mask, no parity checking,
+  // no output processing, force 8 bit input
+
+  options.c_cflag &= ~(CSIZE | PARENB);
+  options.c_cflag |= CS8;
 
   // From http://www.cmrr.umn.edu/~strupp/serial.html
   // Timeouts are ignored in canonical input mode or when the NDELAY option is
@@ -221,17 +221,14 @@ int openComPort(const char* comPortPath, speed_t baudRate) {
   // Setting VTIME = 0, makes UART reads blocking, try experimenting with value
   // to prevent hanging waiting for reads
 
-  // Current setting below: Non-blocking reads with first character recv timeout
-  // of 2 seconds
-  options.c_cc[VMIN] = 4;  // block reading until VMIN 4 of characters are read.
-  options.c_cc[VTIME] =
-      20;  // Inter-Character Timer -- i.e. timeout= x*.1 s = 2 seconds
+  options.c_cc[VMIN] = 0;    // No min # of characters to read
+  options.c_cc[VTIME] = 20;  // Timeout for 1st character is X*0.1secs = 2secs
 
   // Set local mode and enable the receiver
   options.c_cflag |= (CLOCAL | CREAD);
 
-  // Set the new options for the port...
-  int status = tcsetattr(fd_serial, TCSANOW, &options);
+  // Change attributes when output has drained; also flush pending input.
+  int status = tcsetattr(fd_serial, TCSAFLUSH, &options);
 
   if (status != 0)  // For error message
   {
@@ -255,3 +252,54 @@ int openComPort(const char* comPortPath, speed_t baudRate) {
 ** Return value:        None
 *****************************************************************************/
 void closeComPort(void) { close(fd_serial); }
+
+/*****************************************************************************
+** Function name:       deviceOk
+** Description:         (Optional) Checks for Epson device.
+**                      Attempts to recover if UART interface to device
+**                      is inconsistent
+** Parameters:          None
+** Return value:        OK or NG
+*****************************************************************************/
+int deviceOk(void) {
+  int retry_count = 5;
+  unsigned char response[4] = {0};
+  unsigned char SET_WIN_ID0[] = {0xFE, 0x00, 0x0D};
+  unsigned char SET_CONFIG_MODE[] = {0x83, 0x02, 0x0D};
+  unsigned char GET_ID[] = {0x4C, 0x00, 0x0D};
+  unsigned char DELIMITER_[] = {0x0D};
+  const unsigned short ID_VAL_ = 0x5345;
+  unsigned short resp16;
+
+  while (retry_count > 0) {
+    int num_rcv_bytes;
+    writeComPort(SET_WIN_ID0, 3);
+    epsonStall();
+
+    writeComPort(SET_CONFIG_MODE, 3);
+    epsonStall();
+
+    seDelayMS(100);  // delay for pending transfer to complete
+    purgeComPort();
+    num_rcv_bytes = numBytesReadComPort();
+
+    // If receive buffer is empty, and ID register check is ok, then return OK
+    if (num_rcv_bytes == 0) {
+      writeComPort(GET_ID, 3);
+      epsonStall();
+
+      num_rcv_bytes = readComPort(&response[0], 4);
+      if (num_rcv_bytes == 4) {
+        resp16 = (unsigned short)response[1] << 8 | (unsigned short)response[2];
+        if (resp16 == ID_VAL_) {
+          return OK;
+        }
+      }
+    }
+    // If receive buffer is not empty or ID check fails,
+    // send a DELIMITER byte and go thru loop again
+    writeComPort(DELIMITER_, 1);
+    retry_count--;
+  }
+  return NG;
+}

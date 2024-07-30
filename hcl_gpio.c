@@ -3,7 +3,7 @@
 //	hcl_gpio.c - Seiko Epson Hardware Control Library
 //
 //	This layer of indirection is added to allow the sample code to call
-//  generic functions to work on multiple hardware platforms, this is generic
+//  generic functions to work on multiple hardware platforms. This is generic
 //	implementation for GPIO function which may be needed for optionally
 //  connecting pins RESET#, SPI Chipselect, DataReady, EXT of the IMU
 //

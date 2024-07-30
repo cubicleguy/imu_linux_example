@@ -1,6 +1,6 @@
 //==============================================================================
 //
-//  main_helper.h - Epson IMU helper functions headers for console utilities
+//  sensor_epsonUart.h - Epson IMU sensor definitions for UART interface
 //
 //
 //  THE SOFTWARE IS RELEASED INTO THE PUBLIC DOMAIN.
@@ -12,20 +12,18 @@
 //  SOFTWARE.
 //
 //==============================================================================
-
 #pragma once
 
+#include <stdio.h>
+
+#include "hcl.h"
+#include "hcl_uart.h"
 #include "sensor_epsonCommon.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// UART Interface Timing
+// TWRITERATE/TREADRATE = 200us min @ 460800 BAUD, 1 command = 3 bytes =
+// 3 * 22us = 66us TSTALL = 200us - 66us = 134us
+#define EPSON_STALL 134  // Microseconds
 
-// Prototypes
-void printHeaderRow(FILE* fp, const struct EpsonOptions*);
-void printSensorRow(FILE* fp, const struct EpsonOptions*,
-                    const struct EpsonData*, int);
-
-#ifdef __cplusplus
-}
-#endif
+// Required delay between bus cycles for serial timings
+#define epsonStall() seDelayMicroSecs(EPSON_STALL)

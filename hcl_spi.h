@@ -3,7 +3,7 @@
 //  hcl_spi.h - Seiko Epson Hardware Control Library
 //
 //  This layer of indirection is added to allow the sample code to call
-// generic spi functions to work on multiple hardware platforms.
+//  generic SPI functions to work on multiple hardware platforms.
 //
 //
 //  THE SOFTWARE IS RELEASED INTO THE PUBLIC DOMAIN.

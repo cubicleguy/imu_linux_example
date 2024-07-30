@@ -41,38 +41,9 @@
 extern "C" {
 #endif
 
-/*****************************************************************************
-** Function name:       seInit
-** Description:         Initialize the Seiko Epson Hardware Control Library
-** Parameters:          None
-** Return value:        OK or NG
-*****************************************************************************/
 int seInit(void);
-
-/*****************************************************************************
-** Function name:       seRelease
-** Description:         De-initialize the Seiko Epson Hardware Control Library
-** Parameters:          None
-** Return value:        OK or NG
-*****************************************************************************/
 int seRelease(void);
-
-/*****************************************************************************
-** Function name:       seDelayMS
-** Description:         Delay main application thread execution by at least
-**                      the requested number of MilliSeconds
-** Parameters:          uint32_t milliseconds
-** Return value:        None
-*****************************************************************************/
 void seDelayMS(uint32_t millis);
-
-/*****************************************************************************
-** Function name:       seDelayMicroSecs
-** Description:         Delay main application thread execution by at least
-**                      the requested number of Microseconds
-** Parameters:          uint32_t microseconds
-** Return value:        None
-*****************************************************************************/
 void seDelayMicroSecs(uint32_t micros);
 
 #ifdef __cplusplus

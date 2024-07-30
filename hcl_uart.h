@@ -16,10 +16,12 @@
 
 #pragma once
 
-// Common supported BAUD rates.
-// Only G330PDG0/G365PDF1/G366PDG0/G370PDF1/G370PDS0/G370PDG0/G370PDT0 can
-// support 921600 baud. 921600 baud may not be supported on all host hardware
-// platforms.
+// Not all baud rates may be supported on all host hardware
+// platforms or Epson devices. Refer to their data sheets
+// for supported baud rates
+#define BAUD_2000000 2000000
+#define BAUD_1500000 1500000
+#define BAUD_1000000 1000000
 #define BAUD_921600 921600
 #define BAUD_460800 460800
 #define BAUD_230400 230400

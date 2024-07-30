@@ -32,10 +32,9 @@
 *****************************************************************************/
 int seInit(void) {
   // Initialize wiringPi libraries
-  printf("\r\nInitializing libraries...");
+  printf("...Initializing wiringPI library...");
   if (wiringPiSetupGpio() != 0) {
-    printf(
-        "\r\nError: could not initialize wiringPI libraries. Exiting...\r\n");
+    printf("\r\nError: could not initialize wiringPI library. Exiting...\r\n");
     return NG;
   }
   printf("...done.");
