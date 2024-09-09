@@ -858,12 +858,12 @@ int sensorInitOptions(const struct EpsonProperties* esensor,
   // enabled
   int sig_ctrl_lo = 0;
   if (esensor->feature_flags & HAS_DLT_OUTPUT) {
-    sig_ctrl_lo = (options->gyro_delta_out & 0x01) << 2 |
-                  (options->gyro_delta_out & 0x01) << 3 |
-                  (options->gyro_delta_out & 0x01) << 4 |
-                  (options->accel_delta_out & 0x01) << 5 |
-                  (options->accel_delta_out & 0x01) << 6 |
-                  (options->accel_delta_out & 0x01) << 7;
+    sig_ctrl_lo = (options->accel_delta_out & 0x01) << 2 |
+                  (options->accel_delta_out & 0x01) << 3 |
+                  (options->accel_delta_out & 0x01) << 4 |
+                  (options->gyro_delta_out & 0x01) << 5 |
+                  (options->gyro_delta_out & 0x01) << 6 |
+                  (options->gyro_delta_out & 0x01) << 7;
   }
 
   // ND flags for gyro_out X,Y,Z are enabled if gyro_out is enabled
@@ -912,8 +912,8 @@ int sensorInitOptions(const struct EpsonProperties* esensor,
       ((options->atti_out & 0x1) | (options->qtn_out & 0x1) << 1);
   }
   if (esensor->feature_flags & HAS_DLT_OUTPUT) {
-    burst_ctrl1_hi |= ((options->gyro_delta_out & 0x1) << 2 |
-                       (options->accel_delta_out & 0x01) << 3);
+    burst_ctrl1_hi |= ((options->accel_delta_out & 0x1) << 2 |
+                       (options->gyro_delta_out & 0x01) << 3);
   }
   burst_ctrl1_hi |=
     ((options->accel_out & 0x01) << 4 | (options->gyro_out & 0x01) << 5 |
@@ -928,8 +928,8 @@ int sensorInitOptions(const struct EpsonProperties* esensor,
       ((options->atti_bit & 0x1) | (options->qtn_bit & 0x01) << 1);
   }
   if (esensor->feature_flags & HAS_DLT_OUTPUT) {
-    burst_ctrl2_hi |= ((options->gyro_delta_bit & 0x01) << 2 |
-                       (options->accel_delta_bit & 0x01) << 3);
+    burst_ctrl2_hi |= ((options->accel_delta_bit & 0x01) << 2 |
+                       (options->gyro_delta_bit & 0x01) << 3);
   }
   burst_ctrl2_hi |=
     ((options->accel_bit & 0x01) << 4 | (options->gyro_bit & 0x01) << 5 |

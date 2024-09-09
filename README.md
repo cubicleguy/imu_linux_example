@@ -320,4 +320,5 @@ sensor_epsonUart.h          - Header for Epson UART functions.
 ```
 2023-11-08  v1.0.0    - Merge UART Driver v1.9 and SPI Driver v1.7, and minor updates
 2024-07-17  v2.0.0    - Add runtime auto-detect/select of IMU model, re-organize code structure for better consistency
+2024-09-05  v2.0.1    - Minor bugfix for swapped bits in SIG_CTRL_LO, BURST_CTRL1_HI, BURST_CTRL2_HI for gyro_delta_out & accel_delta_out
 ```
